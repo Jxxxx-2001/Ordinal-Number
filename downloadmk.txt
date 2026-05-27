@@ -1,0 +1,88 @@
+jxxxx@LAPTOP-BJKC2655:~/OrdinalNum$ opam repo add coq-released https://coq.inria.fr/opam/released
+[coq-released] Initialised
+[NOTE] Repository coq-released has been added to the selections of switch coq8.20 only.
+       Run `opam repository add coq-released --all-switches|--set-default' to use it in all existing switches,
+       or in newly created switches, respectively.
+
+jxxxx@LAPTOP-BJKC2655:~/OrdinalNum$ opam install coq-morse-kelley-axiomatic-set-theory
+The following actions will be performed:
+=== install 1 package
+  ∗ coq-morse-kelley-axiomatic-set-theory 1.0.0
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+⬇ retrieved coq-morse-kelley-axiomatic-set-theory.1.0.0  (https://github.com/1DGW/formalization-of-Morse-Kelley-axiomatic-set-theory/archive/v1.0.0.tar.gz)
+∗ installed coq-morse-kelley-axiomatic-set-theory.1.0.0
+Done.
+
+要在你的 WSL + Coq 8.20 + Dune 环境中使用 **Morse-Kelley 集合论库**（`coq-morse-kelley-axiomatic-set-theory`），你可以按照以下步骤进行安装和配置：
+
+### 1. 安装库
+在 WSL 终端中，确保你处于 `coq8.20` 的 opam 环境下，然后运行安装命令：
+
+```bash
+# 1. 确保环境激活
+eval $(opam env)
+
+# 2. 安装 Morse-Kelley 库
+opam install coq-morse-kelley-axiomatic-set-theory
+```
+
+*注意：如果报错找不到包，请先添加 Coq 的官方仓库：*
+`opam repo add coq-released https://coq.inria.fr/opam/released`
+
+### 2. 在 Dune 项目中配置依赖
+一旦安装好库，你需要告诉 Dune 你的项目要用到这个外部库。
+
+**修改你的 `dune` 文件：**
+在 `rocq.theory` 部分添加 `theories` 字段，填入该库的**逻辑路径名**（根据官网信息，它的逻辑路径是 `MorseKelley`）。
+
+```scheme
+(rocq.theory
+ (name MyProject)
+ (theories MorseKelley)  ; <--- 添加这一行，声明依赖
+ (package coq-my-project)) ; <--- 可删
+```
+
+### 3. 在代码中调用
+这个库主要由两个核心文件组成：`mk_structure.v`（公理和定义）和 `mk_theorems.v`（定理证明）。
+
+在你的 `.v` 文件中，你可以这样引用：
+
+```coq
+(* 导入 MK 集合论的公理结构 *)
+Require Import MorseKelley.mk_structure.
+
+(* 或者导入所有定理 *)
+Require Import MorseKelley.mk_theorems.
+
+(* 测试：打印一个库里的定义，确认是否读取成功 *)
+Print Class.  (* 在 MK 库中，一切皆为 Class *)
+```
+
+### 4. 如果你想“阅读”源码
+如果你想看这个库是怎么写的（学习它的证明思路），有三种方法：
+
+#### 方法 A：在 VS Code 中直接跳转（最方便）
+1. 配置好上述 `dune` 依赖。
+2. 在你的代码里写下 `Require Import MorseKelley.mk_structure.`。
+3. 按住 **Ctrl** 键并点击 `mk_structure` 这个单词，VS Code 会自动打开该库在 opam 目录下的原始 `.v` 文件。
+
+#### 方法 B：在本地目录查看
+在终端中找到该库的物理路径：
+```bash
+# 进入 opam 的库目录
+cd $(opam var lib)/coq/user-contrib/MorseKelley
+ls
+# 你会看到 mk_structure.v 和 mk_theorems.v
+```
+
+#### 方法 C：在线查看
+该项目的 GitHub 仓库地址为：
+[https://github.com/1DGW/formalization-of-Morse-Kelley-axiomatic-set-theory](https://github.com/1DGW/formalization-of-Morse-Kelley-axiomatic-set-theory)
+你可以在 `Files` 目录下直接阅读源码。
+
+### 常见排查
+*   **报错 `Cannot find a physical path...`**：请检查 `dune` 文件里的 `theories` 是否拼写正确（必须是 `MorseKelley`）。
+*   **交互窗口没反应**：修改 `dune` 文件后，必须在终端重新运行一次 `dune build`，然后按 `Ctrl+Shift+P` 执行 `VsRocq: Restart Language Server`。
+
+这个库非常简洁（只有 8 个公理和 1 个公理模式），非常适合作为你学习集合论形式化的起点！

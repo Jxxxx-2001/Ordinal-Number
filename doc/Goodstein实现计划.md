@@ -197,19 +197,24 @@ PDF 用对 `m` 的强归纳 + 三路分情况：比较两数的 `(指数 t, 系�
 - **验证**：✅ `make` 通过；`Print Assumptions fn_mono/fn_Sn/Sn_bound` 仅标准公理，
       全文件 0 个 `Admitted`、39 个 `Qed`。
 
-### 阶段 6：古德斯坦序列 `gₙ` 与下降论证
-- [ ] 定义 `gₙ`：对下标 n 递归（从底 2 起），`g_{n+1}(m)=S_{n+1}(gₙ(m))−1`（`−1`=`∪`）。
-      可用 MKT128 在 ω 上、或直接用项目已有的 ω-递归封装。
-- [ ] 证 `gₙ(m)∈ω`、以及 `gₙ(m)>0 ⟹ S_{n+1}(gₙ(m))>0`（保证 −1 有意义且严格下降）。
-- [ ] **无穷下降链引理** `no_inf_descent`：不存在严格 ∈-递减 `ω→R` 序列（难点 5）。
-- [ ] **下降步** `goodstein_descent`：当 `gₙ(m)>0` 时 `f_{n+2}(g_{n+1}(m)) < f_{n+1}(gₙ(m))`，
-      由 4.5.5(2) + 4.5.5(1) + `−1` 严格性组合。
-- **验证**：编译通过。
+### 阶段 6：古德斯坦序列 `gₙ` 与下降论证 ✅ 已完成
+- [x] 定义古德斯坦序列：**以步数 `j` 为下标**（从底 2 起），用项目已有的 `Recursion_ω`
+      封装在 ω 上对 `j` 作前驱递归。把「底」与「值」打包成配对 `[base, val]`（基值 `[Two, m]`，
+      步进 `Gstep[[b,v]]=[PlusOne b, ∪(Sₙ_b(v))]`），使步进只依赖前一配对、底随步自增；
+      `gval m j := Second(gd m [j])`、`gbase m j := First(gd m [j])`。递归方程
+      `gval_Φ`/`gval_S`/`gbase_S` 由不变式 `g_inv`+投影 `g_proj` 导出。
+- [x] 证 `gval m j∈ω`、`Two≼gbase m j`（`g_inv` 归纳）；`gval>0 ⟹ Sₙ(gval)≥1`
+      （由 `Sn_ge_one` 给出，保证 `−1=∪` 严格下降、内联进 `goodstein_descent`）。
+- [x] **无穷下降链引理** `no_inf_descent`：不存在严格 ∈-递减 `ω→R` 序列（难点 5）。
+- [x] **下降步** `goodstein_descent`：`gval m j>0 ⟹ f_{gbase(j+1)}(gval(j+1)) ≺ f_{gbase(j)}(gval(j))`，
+      由 `fn_Sn`(4.5.5(2)) + `fn_mono`(4.5.5(1)) + `−1` 严格性组合。
+- **验证**：✅ `make` 通过；`Print Assumptions goodstein_descent / no_inf_descent` 仅标准公理。
 
-### 阶段 7：主定理 `Goodstein`
-- [ ] 陈述：`∀ m ∈ ω, ∃ n ∈ ω, gₙ(m) = Φ`。
-- [ ] 证明：反设恒 `>0`，则 `⟨f_{n+1}(gₙ(m))⟩` 是无穷下降链，与 `no_inf_descent` 矛盾。
-- **验证**：`Goodstein` 定理无 `Admitted`，全项目 `make` 通过。
+### 阶段 7：主定理 `Goodstein` ✅ 已完成
+- [x] 陈述：`∀ m ∈ ω, ∃ j ∈ ω, gval m j = Φ`（序列在有限步内归零；步数下标对应底 `Two+j`）。
+- [x] 证明：`NNPP` 反设恒 `>0`，则 `⟨f_{gbase(j)}(gval(j))⟩` 严格 ∈-递减，与 `no_inf_descent` 矛盾。
+- **验证**：✅ `Goodstein` 定理无 `Admitted`，全项目 `make` 通过；
+      `Print Assumptions Goodstein` 仅 `classic / MK_Axiom / Class / In / Classifier`。
 
 ---
 
@@ -467,3 +472,54 @@ m<n 分支证 `h[k]∈R` 时由 `nat_Ord`（`k∈ω→k∈R`）替代阶段 3 �
 **验证**：`make` 全量通过；`Print Assumptions fn_mono / fn_Sn / Sn_bound` 仅
 `classic / MK_Axiom / Class / In / Classifier`，**无 `admit` 泄漏**。
 全文件 0 个 `Admitted`、39 个 `Qed`。
+
+
+
+### 阶段 6+7（古德斯坦序列与主定理）— 完成
+**目标**：定义古德斯坦序列并证明从任意自然数出发必在有限步内归零（主定理 `Goodstein`）。
+
+**关键设计决策——以「步数」为下标 + 配对载底**：
+古德斯坦序列每一步底数自增（2→3→4…），步进 `gᵥ(j+1)=S_{base(j)}(gᵥ(j))−1` 既依赖前值
+**又**依赖当前底；而项目封装 `Recursion_ω`（`F[Φ]=G1[Φ]`、`F[PlusOne j]=G2[F[j]]`）的步进 `G2`
+只能看到前一个值。破解办法：把「底」与「值」打包成配对 `[base, val]`，让步进算子从配对里读底——
+于是 `G2` 只依赖前一配对，正好匹配 `Recursion_ω`。底随步自增，无需外部下标。
+
+**新增定义/引理（均 `Qed`，仅标准公理）**：
+- `pred_in_ω`（非零自然数是某自然数的后继）、`union_pred_in_ω`（`x∈ω ⟹ ∪x∈ω`，即「−1」保持落 ω）。
+- `Gbase m`（常值配对 `[Two,m]`）、`Gstep`（步进算子，合法配对 `[b,v]`(b,v∈ω,Two≼b)→
+  `[PlusOne b, ∪(Sₙ_b(v))]`，非法输入→`Φ` 占位以保 `dom=μ`）。
+- `OnTo_Gbase`/`OnTo_Gstep`/`step_val_Ens`：喂给 `Recursion_ω` 的两个 `OnTo … μ μ` 义务
+  （仿 `R_Operation_Add.v` 的 `G1_A`/`G3_A` 构造模式；`step_val_Ens` 用 `Sn_spec` 证换底结果落 ω
+  故配对是集合）。
+- `gd m := ∩\{...\}`（取回 `Recursion_ω` 的唯一见证函数，仿 `cnf_wit`/`Sum` 取值式），
+  `gval m j := Second(gd m [j])`、`gbase m j := First(gd m [j])`、`gd_spec`（落出 `Recursion_ω` 方程）。
+- `Gstep_pair`（步进算子在合法配对上的取值）、`g_inv`（不变式：每步都是合法配对，对 `j` 数学归纳）、
+  `g_proj`（投影 `gd m [j]=[gbase,gval]` 及分量约束），由此导出 `gbase_in_ω`/`gval_in_ω`/`gbase_ge_Two`
+  与递归方程 `gval_Φ`/`gbase_S`/`gval_S`。
+- **下降步** `goodstein_descent`：`gval>0`，故 `Sₙ(gval)≥1`（`Sn_ge_one`）⟹ `Sₙ(gval)=PlusOne w`
+  （`pred_in_ω`），`gval(j+1)=∪(Sₙ(gval))=w≺Sₙ(gval)`（`MKT124`）；再由 `fn_mono`（底 `n+1`）+
+  `fn_Sn`（`f_{n+1}∘Sₙ=fₙ`）得 `f_{base(j+1)}(gval(j+1)) ≺ f_{base(j)}(gval(j))`。
+- **难点 5** `no_inf_descent`：不存在严格 ∈-递减的 `ω→R` 序列。取像类 `C=\{A j: j∈ω\}⊂R` 非空，
+  由 `Lemma121` 得 ∈-极小元 `∩C∈C`（即某 `A j₀`），但 `A(PlusOne j₀)≺A j₀=∩C` 也在 `C` 中，
+  与极小性 `FirstMember` 矛盾（`Rrelation _ E _` 即 `∈`）。
+- **主定理** `Goodstein`：`∀ m∈ω, ∃ j∈ω, gval m j=Φ`。`NNPP` 反设恒 `>0`，则
+  `A j := fn (gbase m j)(gval m j)` 处处落 R（`fn_spec`）且严格递减（`goodstein_descent`），
+  套 `no_inf_descent` 得矛盾。步数下标 `j` 对应底 `Two+j`，与 PDF 的「底 n」叙述等价。
+
+**遇到的坑（已解决）**：
+- `Recursion_ω` 在 `Module Recursion_ω` 内，须写 `Recursion_ω.Recursion_ω`。
+- `appA2G`/`appoA2G` 常用 `eauto` 自动判掉 `Ensemble` 副目标乃至整条 `∈\{...\}`（如 `A Φ∈C`、
+  `A(PlusOne j₀)∈C` 仅 `appA2G` 即闭），导致后续 `;[..|..]` 的子目标数不定——逐个用
+  `rocq_step_multi` 探明后改为单独 `appA2G.` 或去掉多余分支。
+- `unfold gbase`/`unfold gval` 会同时展开等式两侧的 `gbase m j`，污染 RHS；改用 `unfold _ at 1`
+  只展开 LHS，RHS 的 `gbase m j` 保持折叠。
+- `union_pred_in_ω` 结论是 `∪x∈ω`（非 `Ensemble(∪x)`），证 `Ensemble` 须先取 `∪x∈ω` 再 `exists ω; auto`。
+- `R_Add_1 : ∀ a b, ON a→ON b→b≺a→PlusOne b≼a`（顺序 a,b，由 `Φ≺v` 得 `One≼v` 取 a:=v,b:=Φ）。
+
+**开发方式**：全程 `rocq-mcp` 交互——`rocq_start` 以「位置模式」在 `Goodstein.v` 副本末尾预热全文件
+上下文（state 810），再以 `rocq_check(from_state, body=整条引理)` 链式累积逐条证明，
+最后整体追加进 `Goodstein.v`、`make` 全量通过、`rocq_assumptions` 审计三主结论。
+
+**验证**：`make` 全量通过；`Print Assumptions Goodstein / no_inf_descent / goodstein_descent` 仅
+`classic / MK_Axiom / Class / In / Classifier`，**无 `admit` 泄漏**。
+全文件 0 个 `Admitted`、57 个 `Qed`。**古德斯坦定理形式化全部完成。**

@@ -188,12 +188,14 @@ PDF 用对 `m` 的强归纳 + 三路分情况：比较两数的 `(指数 t, 系�
 - **验证**：✅ `make` 通过；`Print Assumptions fn_spec` 仅标准公理，
       全文件 0 个 `Admitted`、22 个 `Qed`。
 
-### 阶段 5：核心引理 4.5.5
-- [ ] **界引理** `Sn_bound`：`b<n^t ⟹ Sₙ(b)<(n+1)^{Sₙ(t)}`（难点 4 前置）。
-- [ ] **4.5.5(2)** `fn_Sn`：`f_{n+1}(Sₙ(m)) = fₙ(m)`，对 m 强归纳。
-- [ ] **4.5.5(1)** `fn_mono`：`m<m' ⟹ fₙ(m)<fₙ(m')`，对 m' 强归纳 + 三元组字典序（难点 1）。
-      可能需先证「顶项比较律」辅助引理。
-- **验证**：三条引理编译通过。
+### 阶段 5：核心引理 4.5.5 ✅ 已完成
+- [x] **界引理** `Sn_bound`：`b<n^t ⟹ Sₙ(b)<(n+1)^{Sₙ(t)}`（难点 4 前置）。
+      由 `Sn_mono` + `Sn_pow` 走「单调路线」一步得出。
+- [x] **4.5.5(2)** `fn_Sn`：`f_{n+1}(Sₙ(m)) = fₙ(m)`，对 m 强归纳。
+- [x] **4.5.5(1)** `fn_mono`：`m<m' ⟹ fₙ(m)<fₙ(m')`，对 m' 强归纳 + 三元组字典序（难点 1）。
+      先证了通用「顶项比较律」`top_term_lt`（base 参数化）作辅助。
+- **验证**：✅ `make` 通过；`Print Assumptions fn_mono/fn_Sn/Sn_bound` 仅标准公理，
+      全文件 0 个 `Admitted`、39 个 `Qed`。
 
 ### 阶段 6：古德斯坦序列 `gₙ` 与下降论证
 - [ ] 定义 `gₙ`：对下标 n 递归（从底 2 起），`g_{n+1}(m)=S_{n+1}(gₙ(m))−1`（`−1`=`∪`）。
@@ -420,3 +422,48 @@ m<n 分支证 `h[k]∈R` 时由 `nat_Ord`（`k∈ω→k∈R`）替代阶段 3 �
 全文件 0 个 `Admitted`、22 个 `Qed`。
 
 
+
+### 阶段 5（核心引理 4.5.5）— 完成
+**目标**：证 `fₙ` 严格单调（4.5.5(1)）、`f_{n+1}∘Sₙ = fₙ`（4.5.5(2)）及其前置界引理 `Sn_bound`。
+
+**关键架构决策——非循环依赖骨架**：直接对 m 强归纳证 `fn_mono`/`Sn_mono` 时，归纳步的
+「t<t'」分支需要余项界 `fₙ(b)<ω^{fₙ t}`，而该界又需单调性，表面循环。破解办法：
+把余项界**内联**进同一个强归纳——它由 `IH` 在 `n^t`（满足 `n^t≺m'`）上 + `fn_pow`
+（`fₙ(n^t)=ω^{fₙ t}`）当场导出，`fn_pow` 自身不依赖单调性，从而闭环。
+
+**新增引理（17 条，均 `Qed`，仅标准公理）**：
+- **通用顶项比较律** `top_term_lt`（**全阶段基石**）：对 `base` 参数化，
+  `(e,c,r)` 三元组字典序 ⟹ `base^e·c+r` 的序。`base=ω` 给 `fₙ` 比较，`base=n` 给底-n 比较
+  （后者用于反证「错误方向」分支与 `m=m'` 情形）。核心工具 `Mult_Union'`
+  （`a·b+c≺a·d ⟸ b≺d,c≺a`）+ `Exp_R_Suc` + 指数/乘法单调。
+- **序工具**：`exp_le_imp_le`（`n^a≼n^b⟹a≼b`）、`lt_suc_imp_le`、`le_trans`、
+  `one_le_ne`、`le_antisym`。
+- **分解识别器** `decomp_recognizer`（**工作引擎**）：若 `M=base^e·k+r` 满足底-base 分解约束，
+  则 `get_t/get_k/get_b base M = e,k,r`。证 `get_t=e` 用指数窗口唯一性
+  （`base^e≼M≺base^{e+1}` 配 `CNF_1`/`MaxinExp_maximal` 反挤），`get_k/get_b` 用 `cnf_decomp_unique`。
+- **幂值** `fn_pow`/`Sn_pow`：`f/S(n^s)=ω/(n+1)^{f/S(s)}`（识别 `n^s=n^s·1+0`）。
+- **下界** `fn_ge_one`/`fn_ge_omega`、`Sn_ge_one`/`Sn_ge_succ`：服务于「`m<n` 而 `m'≥n`」分支
+  （`fₙm=m<ω≤fₙm'`；`Sₙm=m<n+1≤Sₙm'`）。
+- **单调** `fn_mono`/`Sn_mono`：对 `m'` 强归纳，casing `(t,t')×(k,k')×(b,b')` 三层三分律，
+  正确方向用 `IH`+`top_term_lt`，错误方向用底-n `top_term_lt` 反推 `m'≺m` 与 `m≺m'` 矛盾。
+- **界引理** `Sn_bound`：`Sₙ(b)<Sₙ(n^t)=(n+1)^{Sₙ t}`（`Sn_mono`+`Sn_pow`）。
+- **4.5.5(2)** `fn_Sn`：对 m 强归纳，归纳步用 `Sn_bound`+`decomp_recognizer`(base n+1) 把
+  `Sₙ(m)=(n+1)^{Sₙt}·k+Sₙb` 识别为底-(n+1) 分解，再套 `f_{n+1}` 递归方程 + `IH`。
+
+**对称复用**：`Sₙ` 版（base 换 `ω`→`PlusOne n`、值域 `R`→`ω`、`R_*_in_R`→`ω_*_in_ω`）与
+`fₙ` 版几乎逐行对应；`top_term_lt`、`decomp_recognizer`、所有序工具两套共用。
+
+**开发方式**：全程用 `rocq-mcp` 交互（`rocq_start` 预热导入 + `rocq_check` 逐引理迭代），
+最后 `rocq_compile_file` 整体校验线性一致，再整合进 `Goodstein.v`。
+
+**遇到的坑（已解决）**：
+- `Less x y := x ∈ y` 是 Definition（非 Notation），但 `assumption`/`auto` 按可转换匹配，
+  故 `k∈ω` 可直接充当 `k≺ω`。
+- `New (...)` 自动命名随上下文漂移（`H` vs `H0`），凡跨步引用一律改 `pose proof ... as 显式名`。
+- `The_Second_Mathematical_Induction` 的基例 `P Φ`：对 `fn_mono`（`P` 含 `∀m∈mp`）用
+  `intros;exfalso;MKT16`；对 `fn_Sn`（`P` 是等式、无 product）改用 `apply Hstep` + 空归纳假设。
+- `MKT16` 形如 `x∉Φ`，矛盾推导用 `eapply MKT16; eauto`（非 `apply (@MKT16 Φ)`）。
+
+**验证**：`make` 全量通过；`Print Assumptions fn_mono / fn_Sn / Sn_bound` 仅
+`classic / MK_Axiom / Class / In / Classifier`，**无 `admit` 泄漏**。
+全文件 0 个 `Admitted`、39 个 `Qed`。

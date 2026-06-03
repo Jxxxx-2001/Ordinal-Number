@@ -180,11 +180,13 @@ PDF 用对 `m` 的强归纳 + 三路分情况：比较两数的 `(指数 t, 系�
 - **验证**：✅ `make Goodstein.vo` 通过；`Print Assumptions Sn_spec` 仅标准公理，
       全文件 0 个 `Admitted`、17 个 `Qed`。
 
-### 阶段 4：定义序数化算子 `fₙ` 并证递归方程
-- [ ] 同阶段 3，步进函数把底换成 `ω`：`m≥n→ω^{h[get_t]}⋅get_k + h[get_b]`。
-- [ ] MKT128 定义 `fₙ`，导出递归方程 `fn_eq_lt` / `fn_eq_ge`。
-- [ ] 证 `fₙ(m) ∈ R`（落入序数）。
-- **验证**：递归方程与 `fₙ(m)∈R` 编译通过。
+### 阶段 4：定义序数化算子 `fₙ` 并证递归方程 ✅ 已完成
+- [x] 步进函数 `G_fn n` 把底换成 `ω`：`m≥n→ω^{u[get_t]}⋅get_k + u[get_b]`。
+- [x] MKT128 取值式定义 `fn n m`，导出递归方程（`G_fn'`：`m<n→h[m]=m`；
+      `G_fn''`：`n≼m→h[m]=ω^{h[t]}⋅k+h[b]`，局部前提 `h[t],h[b]∈R`）。
+- [x] 证 `fₙ(m) ∈ R`（强归纳 `fn_aux`，落入真正序数）。
+- **验证**：✅ `make` 通过；`Print Assumptions fn_spec` 仅标准公理，
+      全文件 0 个 `Admitted`、22 个 `Qed`。
 
 ### 阶段 5：核心引理 4.5.5
 - [ ] **界引理** `Sn_bound`：`b<n^t ⟹ Sₙ(b)<(n+1)^{Sₙ(t)}`（难点 4 前置）。
@@ -387,5 +389,34 @@ PDF 用对 `m` 的强归纳 + 三路分情况：比较两数的 `(指数 t, 系�
 **验证**：`make Goodstein.vo` 通过；`Print Assumptions Sn_spec` 仅显示
 `classic / MK_Axiom / Class / In / Classifier`，**无 `admit` 泄漏**。
 全文件 0 个 `Admitted`、17 个 `Qed`。全项目 `make` 干净通过。
+
+### 阶段 4（序数化算子 `fₙ` 的定义与递归方程）— 完成
+**目标**：定义序数化算子 `fn n m`（把底换成 `ω`，落入真正序数 `R`）。
+
+**与阶段 3 的对称改造**（`Sₙ` → `fₙ`，几乎逐行对应）：
+- 步进函数底 `(PlusOne n)` → `ω`：`G_fn n` 第三路 `v = ω^{u[t]}·k + u[b]`。
+- 值域 `∈ ω` → `∈ R`：`fₙ(m)` 落真正序数（`m≥n` 时 ≥ω），强归纳 `fn_aux` 证
+  `∀m∈ω, m∈dom(h) ∧ h[m]∈R`。
+- ω 封闭 `ω_{Add,Mult,Exp}_in_ω` → R 封闭 `R_{Add,Mult,Exp}_in_R`；
+  `Ensemble v` 由 `exists ω` 改为 `exists R`。
+- `G_fn''` 局部前提 `h[t]∈R`、`h[b]∈R`（替代 `∈ω`），底 `ω` 由 `MKT138`（`ω∈R`）供型；
+  `get_k∈ω` 经 `nat_Ord` 升为 `∈R`。
+
+**新增引理/定义**（均 `Qed`，仅标准公理）：
+- `G_fn n`、`G_fn_fun`、`G_fn'`、`G_fn''`、`fn_aux`、`fn n m`、`fn_spec`。
+- `fn_spec`（**阶段 4 主结论**）：`m∈ω⟹fn n m∈R`；`m≺n⟹fn n m=m`；
+  `n≼m⟹fn n m=ω^{fn n t}·k+fn n b`。
+
+**关键复用**：`Exp_gt_exp`、`cnf_t_lt_m`、`cnf_b_lt_m`、`cnf_spec`、`MKT126b/c`、
+`The_Second_Mathematical_Induction` 等全部沿用阶段 3 的版本，无需重证。
+m<n 分支证 `h[k]∈R` 时由 `nat_Ord`（`k∈ω→k∈R`）替代阶段 3 的 `auto`（`k∈ω`）。
+
+**开发方式**：本阶段首次启用 `rocq-mcp` 工具——把对称改造后的整段代码写入临时文件
+`stage4_tmp.v`，用 `rocq_compile_file` **一次性编译通过**（对称改造无误），
+再整合进 `Goodstein.v`，`rocq_assumptions` 确认 `fn_spec` 仅依赖标准公理。
+
+**验证**：`make` 全量通过；`Print Assumptions fn_spec` 仅
+`classic / MK_Axiom / Class / In / Classifier`，**无 `admit` 泄漏**。
+全文件 0 个 `Admitted`、22 个 `Qed`。
 
 
